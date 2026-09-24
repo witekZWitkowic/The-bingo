@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173d2b">
+  <title>Forest Volunteer Bingo</title>
+  <style>
+    :root {
+      --forest-dark: #102d21;
+      --forest: #1f5a3d;
+      --moss: #6f8f45;
+      --fern: #a8c47a;
+      --cream: #f5f1df;
+      --bark: #765439;
+      --shadow: rgba(7, 25, 17, .28);
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--forest-dark); }
+    body {
+      min-height: 100svh;
+      margin: 0;
+      padding: max(8px, env(safe-area-inset-top)) 5px max(12px, env(safe-area-inset-bottom));
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      font-family: Arial, sans-serif;
+      color: white;
+      text-align: center;
+      overflow-x: hidden;
+      background:
+        linear-gradient(rgba(8, 35, 24, .52), rgba(8, 35, 24, .78)),
+        radial-gradient(ellipse at 15% 0%, rgba(211, 231, 170, .55) 0 5%, transparent 25%),
+        radial-gradient(ellipse at 85% 8%, rgba(139, 177, 99, .42) 0 7%, transparent 27%),
+        repeating-linear-gradient(100deg, transparent 0 11%, rgba(20, 68, 45, .5) 12% 15%, transparent 16% 24%),
+        linear-gradient(145deg, #62864e 0%, #244f37 45%, #102d21 100%);
+      background-attachment: fixed;
+    }
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto 0 0;
+      height: 26vh;
+      pointer-events: none;
+      z-index: 0;
+      opacity: .48;
+      background:
+        radial-gradient(ellipse at 5% 100%, #173d2b 0 15%, transparent 16%),
+        radial-gradient(ellipse at 22% 100%, #24583d 0 18%, transparent 19%),
+        radial-gradient(ellipse at 48% 100%, #173d2b 0 16%, transparent 17%),
+        radial-gradient(ellipse at 70% 100%, #2f6945 0 19%, transparent 20%),
+        radial-gradient(ellipse at 94% 100%, #173d2b 0 17%, transparent 18%);
+    }
+    body::after { transform: scaleY(.72) translateY(10%); opacity: .6; }
+    .app { width: 100%; max-width: 560px; margin: 0 auto; position: relative; z-index: 1; }
+    h1 { margin: 1px 0 3px; font-size: clamp(1.2rem, 5.7vw, 1.75rem); text-shadow: 0 2px 8px var(--shadow); }
+    .intro { margin: 0 auto 7px; max-width: 42ch; font-size: clamp(.72rem, 3vw, .9rem); line-height: 1.25; color: #f8f5e8; }
+    .bingo-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: clamp(2px, .8vw, 5px);
+      width: 100%;
+    }
+    .tile {
+      appearance: none;
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-width: 0;
+      min-height: 0;
+      border: 1.5px solid rgba(255,255,255,.72);
+      border-radius: 7px;
+      background: rgba(249, 247, 232, .96);
+      color: #173d2b;
+      cursor: pointer;
+      aspect-ratio: 1;
+      padding: 3px;
+      font: inherit;
+      font-size: clamp(7.5px, 2.18vw, 12px);
+      line-height: 1.04;
+      font-weight: 600;
+      box-shadow: 0 2px 6px var(--shadow);
+      transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .tile:hover { transform: translateY(-2px); }
+    .tile:focus-visible { outline: 3px solid #f3d86b; outline-offset: 2px; }
+    .tile.active {
+      color: #fff;
+      font-weight: 700;
+      border-color: #cfe6a1;
+      background:
+        linear-gradient(145deg, rgba(42, 104, 67, .9), rgba(16, 57, 38, .96)),
+        radial-gradient(circle at 18% 20%, #a8c47a 0 9%, transparent 10%);
+      box-shadow: inset 0 0 0 2px #406b38, inset 0 0 0 4px #9dbb6d, 0 4px 10px rgba(5, 26, 17, .5);
+      transform: scale(.97);
+    }
+    .tile.active::after {
+      content: "✓";
+      position: absolute;
+      top: 1px;
+      right: 3px;
+      color: #eff8d7;
+      font-size: clamp(9px, 2.7vw, 14px);
+      line-height: 1;
+      text-shadow: 0 1px 2px #173d2b;
+    }
+    #popup {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background: rgba(5, 24, 16, .66);
+      backdrop-filter: blur(5px);
+      z-index: 10;
+    }
+    #popup.show { display: grid; }
+    .popup-card {
+      width: min(92vw, 330px);
+      padding: 24px 20px;
+      border: 3px solid var(--fern);
+      border-radius: 18px;
+      background: var(--cream);
+      color: var(--forest-dark);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    #bingoGrid{
+        margin-top: 50px;
+      }
+    #popup h2 { margin: 0 0 9px; font-size: 1.55rem; color: var(--forest); }
+    #timestamp { margin: 0; }
+    #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 11; }
+    @media (max-width: 390px) {
+      body { padding-left: 3px; padding-right: 3px; }
+      .tile { padding: 2px; border-radius: 5px; font-size: clamp(7px, 2.05vw, 9px); }
+      h1 { font-size: 1.18rem; }
+      .intro { font-size: .7rem; margin-bottom: 5px; }
+    }
+    @media (min-width: 600px) {
+      
+      body { padding-top: 18px; }
+      .bingo-grid { gap: 6px; }
+      .tile { border-radius: 10px; padding: 6px; line-height: 1.12; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .tile { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>🌲 Volunteer Day Bingo 🌲</h1>
+    <p class="intro">Tap a tile when you complete the task. Get five in a row, column, or diagonal!</p>
+    <div class="bingo-grid" id="bingoGrid" aria-label="Volunteer Day bingo board"></div>
+  </main>
+
+  <div id="popup" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+    <div class="popup-card">
+      <h2 id="popupTitle">🌿 Bingo! 🌿</h2>
+      <p id="timestamp"></p>
+    </div>
+  </div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <script>
+    const tasks = [
+      { text: "Tell a joke to someone from the other team.", cluster: "Share & connect" },
+      { text: "Find out what someone from the other team's first job was.", cluster: "Get to know" },
+      { text: "Find someone who has worked at PMI longer than you.", cluster: "Find someone" },
+      { text: "Find someone who has visited more than five countries.", cluster: "Find someone" },
+      { text: "Find out what hobby someone from the other team has.", cluster: "Get to know" },
+      { text: "Learn the name of a colleague's dog, cat, or other pet.", cluster: "Get to know" },
+      { text: "Find the person who lives farthest from here.", cluster: "Find someone" },
+      { text: "Find out someone's favorite food from the other team.", cluster: "Get to know" },
+      { text: "Take a selfie with someone you did not know before today.", cluster: "Photo & fun" },
+      { text: "Help someone with their task for at least five minutes.", cluster: "Collaborate" },
+      { text: "Take a group photo with at least four people from both teams.", cluster: "Photo & fun" },
+      { text: "Switch work partners for a while with someone from the other team.", cluster: "Collaborate" },
+      { text: "Come up with a name for your volunteer group together.", cluster: "Collaborate" },
+      { text: "Take a photo showing the biggest progress of the day.", cluster: "Photo & fun" },
+      { text: "Find someone wearing the same color shoes as you.", cluster: "Find someone" },
+      { text: "Find someone who drinks coffee without milk.", cluster: "Find someone" },
+      { text: "Find out who woke up the earliest today.", cluster: "Find someone" },
+      { text: "Find someone whose birthday is in the same month as yours.", cluster: "Find someone" },
+      { text: "Find someone who does not like mushrooms.", cluster: "Find someone" },
+      { text: "Find someone who can say 'good morning' in three languages.", cluster: "Find someone" },
+      { text: "Tell the group a fun fact about yourself that most people do not know.", cluster: "Share & connect" },
+      { text: "Find out one thing someone would like to do within the next year.", cluster: "Get to know" },
+      { text: "Introduce two people who did not know each other before.", cluster: "Share & connect" },
+      { text: "Take the funniest photo of the day.", cluster: "Photo & fun" },
+      { text: "Help someone from the other team.", cluster: "Collaborate" },
+      { text: "Learn the names of everyone at your table during the BBQ.", cluster: "Share & connect" },
+      { text: "Find out what someone's childhood nickname was.", cluster: "Get to know" },
+      { text: "Find someone who has the same favorite movie or TV show as you.", cluster: "Find someone" },
+      { text: "Thank someone for helping with today's volunteer work.", cluster: "Collaborate" },
+      { text: "Meet the person from your volunteer group who has worked at PMI for the shortest time.", cluster: "Get to know" },
+      { text: "Find someone who enjoys the same music genre as you.", cluster: "Find someone" }
+    ];
+
+    const gridSize = 5;
+    const boardSize = gridSize * gridSize;
+    const storageVersion = "forest-v1";
+    const gridKey = `bingoGridData-${storageVersion}`;
+    const stateKey = `bingoTileState-${storageVersion}`;
+    const winKey = `bingoWin-${storageVersion}`;
+
+    function shuffle(items) {
+      const result = [...items];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+
+    // Round-robin selection keeps clusters as even as possible without repeating tasks.
+    function generateBoard() {
+      const groups = tasks.reduce((map, task) => {
+        (map[task.cluster] ??= []).push(task);
+        return map;
+      }, {});
+      const clusterNames = shuffle(Object.keys(groups));
+      clusterNames.forEach(name => groups[name] = shuffle(groups[name]));
+
+      const selected = [];
+      let level = 0;
+      while (selected.length < boardSize) {
+        let added = false;
+        for (const cluster of clusterNames) {
+          if (groups[cluster][level] && selected.length < boardSize) {
+            selected.push(groups[cluster][level]);
+            added = true;
+          }
+        }
+        if (!added) break;
+        level += 1;
+      }
+      return shuffle(selected).map(task => task.text);
+    }
+
+    function loadBoard() {
+      let board = JSON.parse(localStorage.getItem(gridKey));
+      if (!Array.isArray(board) || board.length !== boardSize) {
+        board = generateBoard();
+        localStorage.setItem(gridKey, JSON.stringify(board));
+      }
+      return board;
+    }
+
+    function loadState() {
+      const state = JSON.parse(localStorage.getItem(stateKey));
+      return Array.isArray(state) && state.length === boardSize ? state : Array(boardSize).fill(false);
+    }
+
+    function saveState(state) { localStorage.setItem(stateKey, JSON.stringify(state)); }
+
+    function checkBingo(state) {
+      const lines = [];
+      for (let i = 0; i < gridSize; i++) {
+        lines.push(state.slice(i * gridSize, (i + 1) * gridSize));
+        lines.push(Array.from({ length: gridSize }, (_, j) => state[i + j * gridSize]));
+      }
+      lines.push(Array.from({ length: gridSize }, (_, i) => state[i * (gridSize + 1)]));
+      lines.push(Array.from({ length: gridSize }, (_, i) => state[(i + 1) * (gridSize - 1)]));
+      return lines.some(line => line.every(Boolean));
+    }
+
+    function showPopup(timestamp) {
+      document.getElementById("timestamp").textContent = `Completed at: ${timestamp}`;
+      document.getElementById("popup").classList.add("show");
+      launchConfetti();
+    }
+
+    function launchConfetti() {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const canvas = document.getElementById("confetti");
+      const ctx = canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const colors = ["#d7e7a9", "#85ad58", "#2f754d", "#f3d86b", "#765439"];
+      const pieces = Array.from({ length: 110 }, () => ({
+        x: Math.random() * canvas.width, y: -20 - Math.random() * canvas.height,
+        size: Math.random() * 7 + 4, speed: Math.random() * 3 + 2,
+        sway: Math.random() * 2 - 1, color: colors[Math.floor(Math.random() * colors.length)]
+      }));
+      let frame = 0;
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        pieces.forEach(p => {
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, p.size, p.size * .55);
+          p.y += p.speed; p.x += Math.sin(p.y * .025) * p.sway;
+          if (p.y > canvas.height) p.y = -10;
+        });
+        frame += 1;
+        if (frame < 360) requestAnimationFrame(draw); else ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      draw();
+    }
+
+    function renderBoard() {
+      const board = loadBoard();
+      const state = loadState();
+      const grid = document.getElementById("bingoGrid");
+      const fragment = document.createDocumentFragment();
+
+      board.forEach((text, index) => {
+        const tile = document.createElement("button");
+        tile.type = "button";
+        tile.className = `tile${state[index] ? " active" : ""}`;
+        tile.setAttribute("aria-pressed", String(state[index]));
+        tile.textContent = text;
+        tile.addEventListener("click", () => {
+          state[index] = !state[index];
+          tile.classList.toggle("active", state[index]);
+          tile.setAttribute("aria-pressed", String(state[index]));
+          saveState(state);
+          if (checkBingo(state) && !localStorage.getItem(winKey)) {
+            const timestamp = new Date().toLocaleString();
+            localStorage.setItem(winKey, JSON.stringify({ timestamp }));
+            setTimeout(() => showPopup(timestamp), 200);
+          }
+        });
+        fragment.appendChild(tile);
+      });
+      grid.replaceChildren(fragment);
+    }
+
+    window.addEventListener("load", () => {
+      const winData = JSON.parse(localStorage.getItem(winKey));
+      if (winData?.timestamp) setTimeout(() => showPopup(winData.timestamp), 200);
+    });
+
+    renderBoard();
+  </script>
+</body>
+</html>
